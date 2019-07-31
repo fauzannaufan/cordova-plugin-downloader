@@ -74,13 +74,14 @@ public class Downloader extends CordovaPlugin {
             String description = arg_object.getString("description");
 			
 
-			File direct = new File(Environment.getExternalStorageDirectory()+ "/"+folder);
-
+			//File direct = new File(Environment.getExternalStorageDirectory()+ "/"+folder);
+            File direct = new File(getApplicationContext().getFilesDir().getPath()+ "/"+folder);
 			if (!direct.exists()) {
 			    direct.mkdirs();
 			}
 			
-			File delExisingFile = new File(Environment.getExternalStorageDirectory()+ "/"+folder+"/"+path);
+			//File delExisingFile = new File(Environment.getExternalStorageDirectory()+ "/"+folder+"/"+path);
+            File delExisingFile = new File(getApplicationContext().getFilesDir().getPath()+ "/"+folder+"/"+path);
 			delExisingFile.delete();
 			
 			Boolean visible = Boolean.valueOf(arg_object.getString("visible"));
