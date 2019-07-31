@@ -15,6 +15,7 @@ import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.PermissionHelper;
 import org.json.JSONObject;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,12 +24,15 @@ import java.util.HashMap;
 public class Downloader extends CordovaPlugin {
 
     public static final String ACTION_DOWNLOAD = "download";
-
+    public static final String WRITE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
+    
     private static final String TAG = "DownloaderPlugin";
 
     private Activity cordovaActivity;
     private DownloadManager downloadManager;
     private HashMap<Long, Download> downloadMap;
+    private JSONArray downloadArgs;
+    private CallbackContext downloadCallbackContext;
 
     @Override
     protected void pluginInitialize()
@@ -52,17 +56,20 @@ public class Downloader extends CordovaPlugin {
         if (ACTION_DOWNLOAD.equals(action)) {
 
             Log.d(TAG, "CordovaPlugin: load " + action);
-            return download(args, callbackContext);
-
+            //if(cordova.hasPermission(WRITE)) {
+                //return download(args, callbackContext);
+            //} else {
+                getReadPermission(0);
+                downloadArgs = args;
+                downloadCallbackContext = callbackContext;
+                return true;
+            //}
         }
 
         return false;
-
-
     }    
 
-    private boolean download(JSONArray args, CallbackContext callbackContext)
-    {
+    private boolean download(JSONArray args, CallbackContext callbackContext) {
         Log.d(TAG, "CordovaPlugin: " + ACTION_DOWNLOAD);
 
         try {
@@ -74,14 +81,14 @@ public class Downloader extends CordovaPlugin {
             String description = arg_object.getString("description");
 			
 
-			//File direct = new File(Environment.getExternalStorageDirectory()+ "/"+folder);
-            File direct = new File(cordovaActivity.getApplicationContext().getFilesDir().getPath()+ "/"+folder);
+			File direct = new File(Environment.getExternalStorageDirectory()+ "/"+folder);
+            //File direct = new File(cordovaActivity.getApplicationContext().getFilesDir().getPath()+ "/"+folder);
 			if (!direct.exists()) {
 			    direct.mkdirs();
 			}
 			
-			//File delExisingFile = new File(Environment.getExternalStorageDirectory()+ "/"+folder+"/"+path);
-            File delExisingFile = new File(cordovaActivity.getApplicationContext().getFilesDir().getPath()+ "/"+folder+"/"+path);
+			File delExisingFile = new File(Environment.getExternalStorageDirectory()+ "/"+folder+"/"+path);
+            //File delExisingFile = new File(cordovaActivity.getApplicationContext().getFilesDir().getPath()+ "/"+folder+"/"+path);
 			delExisingFile.delete();
 			
 			Boolean visible = Boolean.valueOf(arg_object.getString("visible"));
@@ -182,4 +189,29 @@ public class Downloader extends CordovaPlugin {
         }
     }
 
+    protected void getReadPermission(int requestCode) {
+        cordova.requestPermission(this, requestCode, WRITE);
+    }
+
+    @Override
+    public void onRequestPermissionResult(int requestCode, String[] permissions, int[] grantResults) throws JSONException {
+        for(int r:grantResults) {
+            if(r == PackageManager.PERMISSION_DENIED) {
+                this.callbackContext.sendPluginResult(new PluginResult(PluginResult.Status.ERROR, PERMISSION_DENIED_ERROR));
+                return;
+            }
+        }
+        /*switch(requestCode) {
+            case SEARCH_REQ_CODE:
+                search(executeArgs);
+                break;
+            case SAVE_REQ_CODE:
+                save(executeArgs);
+                break;
+            case REMOVE_REQ_CODE:
+                remove(executeArgs);
+                break;
+        }*/
+        download(downloadArgs, downloadCallbackContext);
+    }
 }
